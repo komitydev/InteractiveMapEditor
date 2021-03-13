@@ -60,6 +60,12 @@
        </property>
        <item>
         <widget class="ext_qgraphicsview" name="mapView">
+         <property name="contextMenuPolicy">
+          <enum>Qt::NoContextMenu</enum>
+         </property>
+         <property name="autoFillBackground">
+          <bool>false</bool>
+         </property>
          <property name="frameShadow">
           <enum>QFrame::Plain</enum>
          </property>
@@ -68,6 +74,33 @@
          </property>
          <property name="horizontalScrollBarPolicy">
           <enum>Qt::ScrollBarAlwaysOn</enum>
+         </property>
+         <property name="sizeAdjustPolicy">
+          <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
+         </property>
+         <property name="foregroundBrush">
+          <brush brushstyle="NoBrush">
+           <color alpha="255">
+            <red>127</red>
+            <green>127</green>
+            <blue>127</blue>
+           </color>
+          </brush>
+         </property>
+         <property name="renderHints">
+          <set>QPainter::TextAntialiasing</set>
+         </property>
+         <property name="cacheMode">
+          <set>QGraphicsView::CacheNone</set>
+         </property>
+         <property name="transformationAnchor">
+          <enum>QGraphicsView::AnchorUnderMouse</enum>
+         </property>
+         <property name="resizeAnchor">
+          <enum>QGraphicsView::AnchorViewCenter</enum>
+         </property>
+         <property name="viewportUpdateMode">
+          <enum>QGraphicsView::MinimalViewportUpdate</enum>
          </property>
         </widget>
        </item>
@@ -168,6 +201,8 @@
      <string>Редактирование</string>
     </property>
     <addaction name="enable_edit_mode"/>
+    <addaction name="separator"/>
+    <addaction name="loadSourceImage"/>
    </widget>
    <addaction name="file_menu"/>
    <addaction name="edit_menu"/>
@@ -247,6 +282,11 @@
    </property>
    <property name="text">
     <string>Режим редактирования</string>
+   </property>
+  </action>
+  <action name="loadSourceImage">
+   <property name="text">
+    <string>Выбрать исходное изображение</string>
    </property>
   </action>
  </widget>

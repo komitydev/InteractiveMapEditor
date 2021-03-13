@@ -11,13 +11,18 @@ MapEditor::MapEditor(QWidget *parent)
     statusBarModeLabel->setText(statusBarViewModeMessage);
     ui->statusbar->addPermanentWidget(statusBarModeLabel);
 
+    mapModel = new compositeMap(); //
+
     testthreads(); // delete this
 }
 
 MapEditor::~MapEditor()
 {
     delete statusBarModeLabel;
+    delete mapModel;
+
     delete ui;
+
 }
 
 
@@ -26,7 +31,7 @@ void MapEditor::on_pushButton_clicked()
     ui->statusbar->showMessage("test");
 }
 
-void MapEditor::on_enable_edit_mode_triggered()
+void MapEditor::on_enable_edit_mode_triggered() // управление статусбаром
 {
     QAction* edit_mode = qobject_cast<QAction*>(sender());
     if (edit_mode->isChecked())
@@ -66,165 +71,37 @@ void MapEditor::threadstart()
 // посмотреть слот close() в мейн окне - через дебаг проследить, будет ли он вызываться при нажатии на крестик, через диспетчер задач, через меню
 // и через альтф4
 
-void MapEditor::rewritethis()
+
+void MapEditor::on_loadSourceImage_triggered()
 {
     QString pathToImage = QFileDialog::getOpenFileName(nullptr, "Choose an image to analyze regions",
-                                                       /*QCoreApplication::applicationDirPath()*/"C:/Users/kuzmi/Desktop/Qt Projects/InteractiveMap/resources",
+                                                       QCoreApplication::applicationDirPath()
+                                                       /*"C:/Users/kuzmi/Desktop/Qt Projects/InteractiveMap/resources"*/,
                                                        "Image files (*.png *.jpg *.bmp)");
-    ui->linktofile->setPlainText(pathToImage);
-    QImage worldMap;
-    worldMap.load(pathToImage);
-    worldMap = worldMap.convertToFormat(QImage::Format_RGB32, Qt::MonoOnly);
-    //--------------
-    checkColors(worldMap);
-    //return;
-    //--------------
+    // не работает открытие файлы с кириллицей
 
-    // if dialog is declined - it unloads the scene - fix, cuz it may cause pointer exceptions
-    // еще при множественной загрузке файлов на сцену память отъедается и не выгружается
-    QColor waterC; // color for water on the map
-    waterC.setNamedColor("#ff00abff");
-    QColor borderC;
-    borderC.setNamedColor("#ff000000");
-
-    QColor blackC;
-    blackC.setNamedColor("#ff000000");
-    QColor whiteC;
-    whiteC.setNamedColor("#ffffffff");
-    QColor blueC;
-    blueC.setNamedColor("#ff0000ff");
-
-    //----------
-    blueC = waterC;
-    blackC = borderC;
-    //----------
-
-    int w, h;
-    w = worldMap.width();
-    h = worldMap.height();
-
-    qDebug() << "\nHeight: " << h << "\nWidth: " << w << "\n";
-
-    class pixelOnMap
+    if (pathToImage != "")
     {
-    public: int widthIndex;
-            int heightIndex;
-    public: pixelOnMap(int wi, int he) { this->widthIndex = wi; this->heightIndex = he; }
-            ~pixelOnMap() { ; }
-            void showFields() { qDebug() << "\nheightIndex: " << heightIndex << "\nwidthIndex: " << widthIndex << "\n";}
-    };
+        ui->statusbar->showMessage(pathToImage);
+        mapModel->analyzeImage(pathToImage);
+        // отображение айтемов из списка в mapModel в графикс вью
+        std::map<int,ext_qgraphicspixmapitem>::iterator showItems = mapModel->mapItems.begin();
+        QGraphicsScene *map = new QGraphicsScene(ui->mapView);
 
-    int curW = 0, curH = 0;
-    std::stack <pixelOnMap> currentStepPixels;
-    pixelOnMap currPixel(curW, curH);
-    currentStepPixels.push(currPixel);
-    worldMap.setPixelColor(curW, curH, blueC);
-    currPixel.showFields();
-
-    std::stack <pixelOnMap> nextStepPixels; // will become current step pixels on the next step after stack swapping
-
-    //----------------------------
-    QGraphicsScene *map = new QGraphicsScene(ui->graphicsView);
-    map->addPixmap(QPixmap::fromImage(worldMap));
-
-    ui->graphicsView->setSceneRect(0, 0, worldMap.width(), worldMap.height());
-    ui->graphicsView->setScene(map);
-    //----------------------------
-
-    while (currentStepPixels.size() != 0)
-    {
-        while (currentStepPixels.size() != 0)
+        //map->setBackgroundBrush(Qt::black);
+        //ext_qgraphicspixmapitem *finaltest = new ext_qgraphicspixmapitem();
+        while (showItems != mapModel->mapItems.end())
         {
-            pixelOnMap buffPixel = currentStepPixels.top();
-            currentStepPixels.pop();
-            //qDebug() << "wi" << buffPixel.widthIndex << "he" << buffPixel.heightIndex << "size" << currentStepPixels.size() + 1;
-            // KASTILIKI! just rewrite this abomination after testing functionality
-            if (buffPixel.widthIndex - 1 >= 0 && worldMap.pixelColor(buffPixel.widthIndex - 1, buffPixel.heightIndex) != blueC
-                    && worldMap.pixelColor(buffPixel.widthIndex - 1, buffPixel.heightIndex) != blackC)
-            {
-                pixelOnMap pixel1(buffPixel.widthIndex - 1, buffPixel.heightIndex);
-                nextStepPixels.push(pixel1);
-                worldMap.setPixelColor(buffPixel.widthIndex - 1, buffPixel.heightIndex, blueC);
-                //qDebug() << "left";
-            }
-            if (buffPixel.widthIndex + 1 < w && worldMap.pixelColor(buffPixel.widthIndex + 1, buffPixel.heightIndex) != blueC
-                    && worldMap.pixelColor(buffPixel.widthIndex + 1, buffPixel.heightIndex) != blackC)
-            {
-                pixelOnMap pixel2(buffPixel.widthIndex + 1, buffPixel.heightIndex);
-                nextStepPixels.push(pixel2);
-                worldMap.setPixelColor(buffPixel.widthIndex + 1, buffPixel.heightIndex, blueC);
-                //qDebug() << "right";
-            }
-            if (buffPixel.heightIndex - 1 >= 0 && worldMap.pixelColor(buffPixel.widthIndex, buffPixel.heightIndex - 1) != blueC
-                    && worldMap.pixelColor(buffPixel.widthIndex, buffPixel.heightIndex - 1) != blackC)
-            {
-                pixelOnMap pixel3(buffPixel.widthIndex, buffPixel.heightIndex - 1);
-                nextStepPixels.push(pixel3);
-                worldMap.setPixelColor(buffPixel.widthIndex, buffPixel.heightIndex - 1, blueC);
-                //qDebug() << "top";
-            }
-            if (buffPixel.heightIndex + 1 < h && worldMap.pixelColor(buffPixel.widthIndex, buffPixel.heightIndex + 1) != blueC
-                    && worldMap.pixelColor(buffPixel.widthIndex, buffPixel.heightIndex + 1) != blackC)
-            {
-                pixelOnMap pixel4(buffPixel.widthIndex, buffPixel.heightIndex + 1);
-                nextStepPixels.push(pixel4);
-                worldMap.setPixelColor(buffPixel.widthIndex, buffPixel.heightIndex + 1, blueC);
-                //qDebug() << "bot";
-            }
-            //Sleep(15000);
-//            map->clear();
-//            map->addPixmap(QPixmap::fromImage(worldMap));
-//            ui->graphicsView->setSceneRect(0, 0, worldMap.width(), worldMap.height());
-//            ui->graphicsView->setScene(map);
-//            Sleep(2500);
-            //qDebug() << nextStepPixels.size();
+            //finaltest = &showItems->second;
+            map->addItem(&showItems->second);
+            //showItems->second.setX(100); // calculate borders - then set position according to the left and top borders - ez optimization(maybe not)
+            qDebug() << showItems->second.getSize();
+            showItems++;
+
         }
-        currentStepPixels.swap(nextStepPixels); // обнуленный на этом моменте currentStepPixels меняем с заполненным nextStepPixels
+        ui->mapView->setScene(map);
+        ui->mapView->setSceneRect(0, 0, mapModel->width, mapModel->height);
+        ui->mapView->show(); // придумать, что делать с бэкграундом
     }
-
-    QImage waterMask = worldMap.createMaskFromColor(waterC.rgb(), Qt::MaskOutColor);
-    QPixmap *waterPixmap = new QPixmap(QPixmap::fromImage(worldMap));
-    QBitmap *waterBitmap = new QBitmap(QPixmap::fromImage(waterMask));
-    waterPixmap->setMask(*waterBitmap);
-    //waterBitmap->setMask()
-
-    //worldMap.setPixelColor(0, 0, color);
-    //QPixmap worldPixMap;
-    //worldPixMap.fromImage(worldMap);
-
-    //QGraphicsScene *map1 = new QGraphicsScene(ui->graphicsView);
-
-    //works
-    //QGraphicsPixmapItem *maskTest = new QGraphicsPixmapItem();
-    qgraphicspixmapitem_mityan *maskTest = new qgraphicspixmapitem_mityan();
-    //maskTest->installSceneEventFilter()
-    //maskTest->event
-    maskTest->setAcceptedMouseButtons(Qt::MouseButton::LeftButton);
-    maskTest->setAcceptHoverEvents(true);
-    //maskTest->acceptHoverEvents();
-    //maskTest->setPixmap(QPixmap::fromImage(waterMask)); // CHANGED HERE!
-    maskTest->setPixmap(*waterPixmap); // CHANGED HERE!
-    maskTest->defaultPixmap = *waterPixmap;
-    maskTest->highlightedPixmap = *waterPixmap;
-
-    //-----------
-    QColor blueC1;
-    blueC1.setNamedColor("#ff0000ff");
-    //-----------
-
-    maskTest->highlightedPixmap.fill(blueC1);
-    maskTest->setCursor(Qt::ForbiddenCursor);
-    map->addItem(maskTest);
-    ui->graphicsView->setSceneRect(0, 0, worldMap.width(), worldMap.height());
-    ui->graphicsView->setScene(map);
-    return;
-
-    map->addPixmap(QPixmap::fromImage(worldMap));
-    //map->clear();
-    ui->graphicsView->setSceneRect(0, 0, worldMap.width(), worldMap.height());
-    ui->graphicsView->setScene(map);
-    //map->setSceneRect(0, 0, worldMap.width(), worldMap.height());
-
-    //ui->graphicsView->resetTransform(); // 1
-    //ui->graphicsView->show();
+    return; // check what happens when you cancel dialog
 }

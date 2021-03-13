@@ -7,10 +7,12 @@
 #include <QLabel>
 #include <QPixmap>
 #include <QAction>
+#include <QFileDialog>
 
 #include <QDebug>
 #include <windows.h>
 #include <thread>
+#include "compositemap.h"
 //-----------------------------------
 
 QT_BEGIN_NAMESPACE
@@ -29,14 +31,21 @@ private slots:
     void on_pushButton_clicked();
     void on_enable_edit_mode_triggered();
 
+    void on_loadSourceImage_triggered(); // зададим путь к исходному изображению для создания карты
+
 private:
     Ui::MapEditor *ui;
 
+    //--- управление статусбаром ---
     QLabel *statusBarModeLabel;
     QString statusBarEditModeMessage = "Режим редактирования активен",
             statusBarViewModeMessage = "Режим просмотра активен";
     bool editModeOn = false;
+    //------------------------------
 
+    QString pathToImage = "kek"; // изображение для создания первоначальной карты версии карты
+    bool savedSession = true;
+    compositeMap *mapModel;
 
     void rewritethis();
 
