@@ -12,6 +12,7 @@ SOURCES += \
     compositemap.cpp \
     ext_qgraphicspixmapitem.cpp \
     ext_qgraphicsview.cpp \
+    item_chosen.cpp \
     main.cpp \
     mapeditor.cpp
 
@@ -19,6 +20,7 @@ HEADERS += \
     compositemap.h \
     ext_qgraphicspixmapitem.h \
     ext_qgraphicsview.h \
+    item_chosen.h \
     mapeditor.h
 
 FORMS += \

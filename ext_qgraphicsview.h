@@ -5,6 +5,7 @@
 #include <QScrollBar>
 #include <QGraphicsView>
 #include <QWheelEvent>
+#include <QKeyEvent>
 
 class ext_qgraphicsview : public QGraphicsView
 {
@@ -18,6 +19,7 @@ private:
     double viewScale;
 
     void wheelEvent(QWheelEvent *wevent);
+    void keyPressEvent (QKeyEvent *kevent);
 };
 
 #endif // EXT_QGRAPHICSVIEW_H

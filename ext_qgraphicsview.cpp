@@ -59,3 +59,16 @@ void ext_qgraphicsview::wheelEvent(QWheelEvent *wevent)
     wevent->accept();
     return;
 }
+
+void ext_qgraphicsview::keyPressEvent (QKeyEvent *kevent)
+{
+    if (kevent->key() != Qt::Key_Escape)
+    {
+        kevent->ignore();
+        return;
+    }
+
+    //this->setVisible(false);
+    kevent->accept();
+    return;
+}

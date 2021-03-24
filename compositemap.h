@@ -12,9 +12,6 @@
 // класс, в котором будут храниться все созданные объекты в результате анализа изображения - в сумме все
 // изображения, маски и прочие элементы будут составлять карту, которая будет отображаться в области просмотра
 
-//QTableWidget
-//QTableWidgetItem - одна ячейка
-
 class compositeMap
 {
 public:
@@ -31,8 +28,9 @@ public:
     std::map<QString, bool> usedColors;                   // color and id of the region that uses it
 
     bool analyzeImage(QString pathToImage); // file name with image to analyze
+
     QString randomHex2S(int randOffset);  // generate string containing 2 hex symbols (numbers from 0 to 9 and letters A B C D E F)
-    QString generateNiceColor(); // nice means that it will differ a lot from white and black
+    QString generateNiceColor(); // nice means that it will differ a lot from pure white and black
 };
 
 class pixelOnMap    // pixel coordinates on image

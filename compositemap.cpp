@@ -14,8 +14,9 @@ bool compositeMap::analyzeImage(QString pathToImage)
 {
     QImage worldMap;
     qDebug() << "image load status" << worldMap.load(pathToImage);
-    worldMap = worldMap.convertToFormat(QImage::Format_RGB32, Qt::MonoOnly);
-    // check what conversion do to colorful image
+
+    worldMap = worldMap.convertToFormat(QImage::Format_Mono, Qt::ThresholdDither | Qt::MonoOnly); // making black and white image
+    worldMap = worldMap.convertToFormat(QImage::Format_RGB32); // setting image to color format again to be able to manipulate pixels
 
     int w, h; // size of the image (width and height)
     w = worldMap.width();
@@ -29,21 +30,42 @@ bool compositeMap::analyzeImage(QString pathToImage)
     whiteC.setNamedColor("#ffffffff");
     QColor highlightedC;
     highlightedC.setNamedColor("#ff00abff"); // HIGHLIGHT COLOR
-//    QColor editC;
-//    editC.setNamedColor("#ff00b403"); // green
-
     QColor tempC;
-    //tempC.setNamedColor("#ffff6700"); // orange
+
+    int id = 0; // id that we will give to our region on the map to identify it further
+
+    // in a two-color image black pixels are for the borders - we extract mask from black-colored pixels and set this region as "non-interactable"
+    QImage *bordersMask = new QImage(worldMap.createMaskFromColor(blackC.rgb(), Qt::MaskOutColor));
+    QPixmap *bordersPixmap = new QPixmap(QPixmap::fromImage(*bordersMask));
+    QBitmap *bordersBitmap = new QBitmap(QPixmap::fromImage(*bordersMask));
+    bordersPixmap->setMask(*bordersBitmap);
+
+    ext_qgraphicspixmapitem *bordersItem = new ext_qgraphicspixmapitem();
+    bordersItem->setProps(id, *bordersPixmap, *bordersPixmap, blackC, 0);
+
+    try
+    {
+        mapItems.at(id).setX(0);
+        mapItems.at(id).setY(0);
+    }
+    catch (std::out_of_range e2)
+    {
+        mapItems.insert({ id, *bordersItem });
+        mapItems.at(id).setX(0);
+        mapItems.at(id).setY(0);
+        mapItems.at(id).setAcceptHoverEvents(false);            // for the borders we need to disable hover events,
+        mapItems.at(id).setAcceptedMouseButtons(Qt::NoButton);  // all mouse buttons
+        mapItems.at(id).unsetCursor();                          // and return cursor to default state
+    }
+
+    delete bordersItem;
+    delete bordersPixmap;
+    delete bordersBitmap;
+    delete bordersMask;
+    // -----------
 
     int mapSize = w * h; // кол-во пикселей во всем изображении - будем использовать для примерного отображения прогресса выполнения функции
     int curW = 0, curH = 0; // current X and Y coordinates of pixel on the source image
-    int id = 0; // id that we will give to our region on the map to identify it further
-
-    // СДЕЛАТЬ ЗДЕСЬ РЕГИОН ПОД НУЛЕВЫМ ID, КОТОРЫЙ БУДЕТ СОСТОЯТЬ ЦЕЛИКОМ ИЗ ЧЕРНЫХ ПИКСЕЛЕЙ ИСХОДНОГО ИЗОБРАЖЕНИЯ
-
-    // пока не достигли последнего пикселя, проверяем, есть ли белые пиксели на изображении
-    // и от каждого белого пикселя заполняем полностью регион, который соединяется с этим пикселем;
-    // вся карта в итоге заполнится разными цветами и белых пикселей не останется
 
     pixelOnMap currPixel(curW, curH); // пиксель с текущими координатами
     QString curColor; // color for the current region
@@ -56,6 +78,11 @@ bool compositeMap::analyzeImage(QString pathToImage)
     pixelOnMap newPixel; // one of 4 possible new pixels to check on the next step
 
     int cleft, cright, ctop, cbottom;
+
+    // пока не достигли последнего пикселя, проверяем, есть ли белые пиксели на изображении
+    // и от каждого белого пикселя заполняем полностью регион, который соединяется с этим пикселем;
+    // вся карта в итоге заполнится разными цветами и белых пикселей не останется
+
     while (curW < w && curH < h)
     {
         currPixel.setNew(curW, curH);
@@ -85,11 +112,6 @@ bool compositeMap::analyzeImage(QString pathToImage)
         bool notGenerated = true; // если цвета в наборе использованных ранее не будет - меняем эту переменную на false и выходим из цикла
         while (notGenerated == true)
         {
-//            curColor = "#ff";
-//            for (int u = 0; u < 3; u++)
-//            {
-//                curColor += randomHex2S();
-//            }
             curColor = generateNiceColor();
             tempC.setNamedColor(curColor);
             try
@@ -159,44 +181,19 @@ bool compositeMap::analyzeImage(QString pathToImage)
         }
 
         // создание масок для региона
-        // QImage QImage::copy(int x, int y, int width, int height) const
-        int regw = cright-cleft, regh = cbottom-ctop;
-        if (regw == 0)
-            regw++;
-        if (regh == 0)
-            regh++;
-//        QImage smallRegionImage = worldMap.copy(cleft, ctop, regw, regh);
-
-//        QImage regionMask = smallRegionImage.createMaskFromColor(tempC.rgb(), Qt::MaskOutColor);
-//        QPixmap regionPixmap(QPixmap::fromImage(smallRegionImage));
-//        QBitmap regionBitmap(QPixmap::fromImage(regionMask));
-//        regionPixmap.setMask(regionBitmap);
-
-//        QPixmap highlightedPixmap(regw, regh);
-//        highlightedPixmap.fill(highlightedC);
-//        highlightedPixmap.setMask(regionBitmap);
+        int regw = (cright-cleft) + 1, regh = (cbottom-ctop) + 1;
 
         QImage *smallRegionImage = new QImage(worldMap.copy(cleft, ctop, regw, regh));
-
         QImage *regionMask = new QImage(smallRegionImage->createMaskFromColor(tempC.rgb(), Qt::MaskOutColor));
-
-        //-----
         QPixmap *regionPixmap = new QPixmap(QPixmap::fromImage(*smallRegionImage));
         QBitmap *regionBitmap = new QBitmap(QPixmap::fromImage(*regionMask));
-        //QBitmap regionBitmap(QPixmap::fromImage(*regionMask));
-        //-----
         regionPixmap->setMask(*regionBitmap);
-
         QPixmap *highlightedPixmap = new QPixmap(regw, regh);
         highlightedPixmap->fill(highlightedC);
         highlightedPixmap->setMask(*regionBitmap);
 
-        qDebug () << "l" << cleft << "r" << cright << "t" << ctop << "b" << cbottom;
-        qDebug() << "id -" << id;
-        //qDebug() << "sz -" << regionPixmap->;
-
         ext_qgraphicspixmapitem *newItem = new ext_qgraphicspixmapitem();
-        newItem->setProps(id, *regionPixmap, *highlightedPixmap, /*editPixmap,*/ tempC, regionSize);
+        newItem->setProps(id, *regionPixmap, *highlightedPixmap, tempC, regionSize);
 
         try
         {
@@ -210,28 +207,19 @@ bool compositeMap::analyzeImage(QString pathToImage)
             mapItems.at(id).setY(ctop);
         }
 
-        //qDebug() << "gonna delete now v ";
-        delete newItem; // деструктор срабатывает сам
-        //qDebug() << "deleted it now ^ ";
-
-
+        delete newItem;
         delete regionPixmap;
         delete regionBitmap;
         delete smallRegionImage;
         delete regionMask;
         delete highlightedPixmap;
-
-        //Sleep(2500);
-
-//        if (mapItems.size() > 150) // 146.5 mb for 200 objects
-//            break; // test
     }
     return true;
 }
 
 QString compositeMap::generateNiceColor()
 {
-    QString res = "#ff"; // we generate color in ARGB format that has "AA" equal to "ff"
+    QString res = "#ff"; // we generate color in #AARRGGBB format that has "AA" equal to "ff"
     int irand = 0;
     int offset = 48;
     irand = rand() % (256 - offset) + offset; // fist component of the color should have offset 0+64 to get away from tones that are close to black

@@ -6,7 +6,29 @@ ext_qgraphicspixmapitem::ext_qgraphicspixmapitem(QGraphicsItem *parent) : QGraph
     this->setAcceptHoverEvents(true);
     this->setCursor(Qt::PointingHandCursor);
     this->setVisible(true);
-    this->setPixmap(*currentPixmap);
+
+    this->setPixmap(defaultPixmap); // delete this somehow
+
+    if (table != nullptr)
+    {
+        delete table;
+        table = nullptr; // all qtablewidgets wont be destoyed(or will they?)
+    }
+    table = new QTableWidget();
+    table->setRowCount(10);
+    table->setColumnCount(2);
+
+    table->setCornerButtonEnabled(false);
+    table->setSortingEnabled(false);
+    table->setHorizontalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
+    table->setVerticalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
+    table->setSelectionMode(QAbstractItemView::SelectionMode::NoSelection);
+    table->horizontalHeader()->hide();
+    table->verticalHeader()->hide();
+    table->setDragEnabled(false);
+    table->setWordWrap(true);
+    table->setTextElideMode(Qt::ElideNone);
+    table->setContextMenuPolicy(Qt::ContextMenuPolicy::NoContextMenu);
 }
 
 ext_qgraphicspixmapitem::ext_qgraphicspixmapitem(const ext_qgraphicspixmapitem &a, QGraphicsItem *parent) : QGraphicsPixmapItem(parent)
@@ -14,23 +36,48 @@ ext_qgraphicspixmapitem::ext_qgraphicspixmapitem(const ext_qgraphicspixmapitem &
     this->id = a.id;
     this->defaultPixmap = a.defaultPixmap;
     this->highlightedPixmap = a.highlightedPixmap;
-    this->editPixmap = a.editPixmap;
     this->defaultColor = a.defaultColor;
     this->size = a.size;
+
+    this->setPixmap(defaultPixmap); // delete this somehow (set it in another function)
 
     this->setAcceptedMouseButtons(Qt::MouseButton::LeftButton);
     this->setAcceptHoverEvents(true);
     this->setCursor(Qt::PointingHandCursor);
     this->setVisible(true);
-    this->setPixmap(*currentPixmap);
+
+    if (table != nullptr)
+    {
+        delete table;
+        table = nullptr; // all qtablewidgets wont be destoyed(or will they?)
+    }
+    table = new QTableWidget();
+    table->setRowCount(10);
+    table->setColumnCount(2);
+
+    table->setCornerButtonEnabled(false);
+    table->setSortingEnabled(false);
+    table->setHorizontalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
+    table->setVerticalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
+    table->setSelectionMode(QAbstractItemView::SelectionMode::NoSelection);
+    table->horizontalHeader()->hide();
+    table->verticalHeader()->hide();
+    table->setDragEnabled(false);
+    table->setWordWrap(true);
+    table->setTextElideMode(Qt::ElideNone);
+    table->setContextMenuPolicy(Qt::ContextMenuPolicy::NoContextMenu);
 }
 
-void ext_qgraphicspixmapitem::setProps(int id, QPixmap defaultPixmap, QPixmap highlightedPixmap, /*QPixmap editPixmap,*/ QColor defaultColor, int size)
+ext_qgraphicspixmapitem::~ext_qgraphicspixmapitem()
+{
+    return;
+}
+
+void ext_qgraphicspixmapitem::setProps(int id, QPixmap defaultPixmap, QPixmap highlightedPixmap, QColor defaultColor, int size)
 {
     this->id = id;
     this->defaultPixmap = defaultPixmap;
     this->highlightedPixmap = highlightedPixmap;
-    this->editPixmap = editPixmap;
     this->defaultColor = defaultColor;
     this->size = size;
 }
@@ -38,21 +85,31 @@ void ext_qgraphicspixmapitem::setProps(int id, QPixmap defaultPixmap, QPixmap hi
 void ext_qgraphicspixmapitem::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
     event->accept();
-    qDebug() << "entered object";
     this->setPixmap(highlightedPixmap);
-
 }
 
 void ext_qgraphicspixmapitem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 {
     event->accept();
-    qDebug() << "exited object";
     this->setPixmap(defaultPixmap);
 }
 
 void ext_qgraphicspixmapitem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
+    QColor c1;
+    c1.setNamedColor("#ffffffff");
+    QBitmap cmask = defaultPixmap.mask(); // nice!
+    defaultPixmap.fill(c1);
+    defaultPixmap.setMask(cmask);
+    //QImage test = new QImage(defaultPixmap);
+    /*for (int i = 0; i < defaultPixmap.width(); i++)
+    {
+        for (int j = 0; j < defaultPixmap.height(); j++)
+        {
+            defaultPixmap.pixelColor(buffPixel.widthIndex - 1, buffPixel.heightIndex) != blackC;
+        }
+    }*/
+    //this->defaultPixmap.fill(c1);
     event->accept();
-    qDebug() << "shlick!";
-    //this->setPixmap(highlightedPixmap);
+    sgnl.performMessaging(id);
 }
