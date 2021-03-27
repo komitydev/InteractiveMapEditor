@@ -10,7 +10,7 @@
 
 #include <QDebug>
 #include <QBitmap>
-#include <item_chosen.h>
+#include <cheatClass.h>
 #include <QHeaderView>
 
 class ext_qgraphicspixmapitem : public QGraphicsPixmapItem
@@ -18,11 +18,10 @@ class ext_qgraphicspixmapitem : public QGraphicsPixmapItem
 public:
     ext_qgraphicspixmapitem(QGraphicsItem *parent = nullptr);
     ext_qgraphicspixmapitem(const ext_qgraphicspixmapitem &a, QGraphicsItem *parent = nullptr);
-    ~ext_qgraphicspixmapitem();
     void setProps(int id, QPixmap defaultPixmap, QPixmap highlightedPixmap, /*QPixmap editPixmap,*/ QColor defaultColor, int size);
     int getID() { return id; };
     int getSize() { return size; };
-    item_chosen sgnl;
+    cheatClass sgnl;
     QTableWidget *table = nullptr;
 
 private:

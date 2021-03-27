@@ -1,4 +1,4 @@
-QT       += core gui
+QT += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -9,18 +9,18 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    cheatClass.cpp \
     compositemap.cpp \
     ext_qgraphicspixmapitem.cpp \
     ext_qgraphicsview.cpp \
-    item_chosen.cpp \
     main.cpp \
     mapeditor.cpp
 
 HEADERS += \
+    cheatClass.h \
     compositemap.h \
     ext_qgraphicspixmapitem.h \
     ext_qgraphicsview.h \
-    item_chosen.h \
     mapeditor.h
 
 FORMS += \

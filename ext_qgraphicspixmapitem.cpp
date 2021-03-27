@@ -15,7 +15,7 @@ ext_qgraphicspixmapitem::ext_qgraphicspixmapitem(QGraphicsItem *parent) : QGraph
         table = nullptr; // all qtablewidgets wont be destoyed(or will they?)
     }
     table = new QTableWidget();
-    table->setRowCount(10);
+    table->setRowCount(30);
     table->setColumnCount(2);
 
     table->setCornerButtonEnabled(false);
@@ -29,6 +29,7 @@ ext_qgraphicspixmapitem::ext_qgraphicspixmapitem(QGraphicsItem *parent) : QGraph
     table->setWordWrap(true);
     table->setTextElideMode(Qt::ElideNone);
     table->setContextMenuPolicy(Qt::ContextMenuPolicy::NoContextMenu);
+    return;
 }
 
 ext_qgraphicspixmapitem::ext_qgraphicspixmapitem(const ext_qgraphicspixmapitem &a, QGraphicsItem *parent) : QGraphicsPixmapItem(parent)
@@ -52,7 +53,7 @@ ext_qgraphicspixmapitem::ext_qgraphicspixmapitem(const ext_qgraphicspixmapitem &
         table = nullptr; // all qtablewidgets wont be destoyed(or will they?)
     }
     table = new QTableWidget();
-    table->setRowCount(10);
+    table->setRowCount(30);
     table->setColumnCount(2);
 
     table->setCornerButtonEnabled(false);
@@ -66,10 +67,6 @@ ext_qgraphicspixmapitem::ext_qgraphicspixmapitem(const ext_qgraphicspixmapitem &
     table->setWordWrap(true);
     table->setTextElideMode(Qt::ElideNone);
     table->setContextMenuPolicy(Qt::ContextMenuPolicy::NoContextMenu);
-}
-
-ext_qgraphicspixmapitem::~ext_qgraphicspixmapitem()
-{
     return;
 }
 

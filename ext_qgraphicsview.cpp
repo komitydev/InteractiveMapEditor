@@ -6,12 +6,14 @@ ext_qgraphicsview::ext_qgraphicsview(QWidget *parent) : QGraphicsView(parent)
     horSB = new QScrollBar(Qt::Horizontal);
     this->setHorizontalScrollBar(horSB);
     this->setVerticalScrollBar(verSB);
+    return;
 }
 
 ext_qgraphicsview::~ext_qgraphicsview()
 {
     delete(horSB);
     delete(verSB);
+    return;
 }
 
 void ext_qgraphicsview::wheelEvent(QWheelEvent *wevent)

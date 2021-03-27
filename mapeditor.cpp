@@ -11,8 +11,11 @@ MapEditor::MapEditor(QWidget *parent)
     statusBarModeLabel->setText(statusBarViewModeMessage);
     ui->statusbar->addPermanentWidget(statusBarModeLabel);
 
-    testthreads(); // delete this
     xLinePos = ui->windowSeparator->pos().x();
+
+    ui->loadingLabel->setVisible(false);
+    ui->LoadingProgressBar->setVisible(false);
+    ui->mapView->setEnabled(false);
 }
 
 MapEditor::~MapEditor()
@@ -23,15 +26,6 @@ MapEditor::~MapEditor()
 
     delete ui;
 
-}
-
-
-void MapEditor::on_pushButton_clicked()
-{
-    //ui->mapwidget->resize(50, ui->mapwidget->size().height());
-    ui->statusbar->showMessage("test");
-    if (mapModel != nullptr)
-        delete mapModel;
 }
 
 void MapEditor::on_enable_edit_mode_triggered() // управление статусбаром
@@ -50,72 +44,8 @@ void MapEditor::on_enable_edit_mode_triggered() // управление стат
     return;
 }
 
-void MapEditor::testthreads() // will use this method to calculate regions without blocking user interface
-{
-    ui->progressBar->setValue(0); // will have to show placeholder instead of graphics view and after function will do its work - show target content
-    std::thread tryit(&MapEditor::threadstart, this);
-    qDebug() << "started";
-    tryit.detach();
-    qDebug() << "detached";
-}
-
-void MapEditor::threadstart()
-{
-    Sleep(10000);
-    ui->progressBar->setValue(100);
-    qDebug() << "finished";
-}
-
-// класс для хранения текущего открытого файла - путь, флаг сохранения объект класса, хранящий полную сущность "карта"
-// при изменении чего-либо в режиме редактирования - изменяем объект этой сущности
-// в классе экземпляра интерфейса создаем объект вышеупомянутого класса. при нажатии на кнопку(загрузить),
-// начинается пиздец, который заебешься программировать
-
 // посмотреть слот close() в мейн окне - через дебаг проследить, будет ли он вызываться при нажатии на крестик, через диспетчер задач, через меню
 // и через альтф4
-
-
-void MapEditor::on_loadSourceImage_triggered()
-{
-    QString pathToImage = QFileDialog::getOpenFileName(nullptr, "Choose an image to analyze regions",
-                                                       QCoreApplication::applicationDirPath(), "Image files (*.png *.jpg *.bmp)");
-    if (pathToImage != "")
-    {
-        mapModel = new compositeMap(); // delete
-        ui->statusbar->showMessage(pathToImage);
-//        if (!mapModel->analyzeImage(pathToImage))
-//        {
-//            qDebug() << "founderror";
-//            return;
-//        }
-        try {
-            mapModel->analyzeImage(pathToImage);
-        }  catch (std::exception ex) {
-            qDebug() << "something failed";
-        }
-        //return;
-        // отображение айтемов из списка в mapModel в графикс вью
-        std::map<int,ext_qgraphicspixmapitem>::iterator showItems = mapModel->mapItems.begin();
-        QGraphicsScene *map = new QGraphicsScene(ui->mapView);
-
-        //map->setBackgroundBrush(Qt::black);
-        //ext_qgraphicspixmapitem *finaltest = new ext_qgraphicspixmapitem();
-        while (showItems != mapModel->mapItems.end())
-        {
-            //finaltest = &showItems->second;
-            map->addItem(&showItems->second);
-            QObject::connect(&(showItems->second.sgnl), SIGNAL(itemChosen(int)), this, SLOT(infoTable_update(int)));
-            //showItems->second.setX(100); // calculate borders - then set position according to the left and top borders - ez optimization(maybe not)
-            //qDebug() << showItems->second.getSize();
-            showItems++;
-
-        }
-        ui->mapView->setScene(map);
-        ui->mapView->setSceneRect(0, 0, mapModel->width, mapModel->height);
-        ui->mapView->update(); // придумать, что делать с бэкграундом
-    }
-    return;
-}
 
 void MapEditor::infoTable_update(int number = 0)
 {
@@ -162,6 +92,7 @@ void MapEditor::infoTable_update(int number = 0)
     //QString hehell01 = item01.text();
     //qDebug() << "text01" << hehell01;
     mapModel->mapItems.at(number).table->setParent(ui->infowidget);
+    //mapModel->mapItems.at(number).table->adjustSize(); // ????????????????????????????????????????????????????????????????????????????????????????????
     mapModel->mapItems.at(number).table->raise();
     mapModel->mapItems.at(number).table->show();
     //mapModel->mapItems.at(number).table->raise();
@@ -401,3 +332,65 @@ void MapEditor::on_actioncreatetable_triggered()
     buff = currentone;
     return;
 }
+
+//------------------------------------------------
+// the whole code part was set up to work with threads, but then i realised, that there are a lot to do except of this,
+// so i returned to an old version (at least until i will have some time to deal with this)
+void MapEditor::on_loadSourceImage_triggered()
+{
+    QString pathToImage = QFileDialog::getOpenFileName(nullptr, "Choose an image to analyze regions",
+                                                       QCoreApplication::applicationDirPath(), "Image files (*.png *.jpg *.bmp)");
+    if (pathToImage != "")
+    {
+        mapModel = new compositeMap(); // delete
+        ui->statusbar->showMessage(pathToImage);
+        ui->loadingLabel->setVisible(true);
+        ui->LoadingProgressBar->setVisible(true);
+        QObject::connect(&(mapModel->sgnl_obj), SIGNAL(loadingStep(int)), this, SLOT(on_LoadingProgressBar_valueChanged(int)));
+
+        // analyzing in another thread
+        // std::thread analyzeImageThread(&compositeMap::analyzeImage, mapModel, pathToImage);
+        // analyzeImageThread.detach();
+        mapModel->analyzeImage(pathToImage); // :) разумеется, ничто не могло быть так просто
+        if (mapModel->analyzingSuccessful == false)
+        {
+            ui->statusbar->showMessage("При анализе изображения произошла ошибка или изображение не удается загрузить...");
+        }
+    }
+    return;
+}
+
+void MapEditor::on_LoadingProgressBar_valueChanged(int value)
+{
+    ui->LoadingProgressBar->setValue(value);
+    ui->LoadingProgressBar->update();
+    if (value == 100)
+    {
+        QObject::disconnect(&(mapModel->sgnl_obj), SIGNAL(loadingStep(int)), this, SLOT(on_LoadingProgressBar_valueChanged(int))); // надо ли?
+        finishMapAnalyzing();
+    }
+    return;
+}
+
+void MapEditor::finishMapAnalyzing()
+{
+    std::map<int,ext_qgraphicspixmapitem>::iterator showItems = mapModel->mapItems.begin();
+    QGraphicsScene *map = new QGraphicsScene(ui->mapView);
+
+    while (showItems != mapModel->mapItems.end())
+    {
+        map->addItem(&showItems->second);
+        QObject::connect(&(showItems->second.sgnl), SIGNAL(itemChosen(int)), this, SLOT(infoTable_update(int)));
+        showItems++;
+    }
+
+    ui->mapView->setScene(map);
+    ui->mapView->setSceneRect(0, 0, mapModel->width, mapModel->height);
+    ui->mapView->update(); // придумать, что делать с бэкграундом
+
+    ui->loadingLabel->setVisible(false);
+    ui->LoadingProgressBar->setVisible(false);
+    ui->mapView->setEnabled(true);
+    return;
+}
+//------------------------------------------------

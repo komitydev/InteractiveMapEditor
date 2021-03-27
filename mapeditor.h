@@ -52,6 +52,8 @@ private slots:
 
     void on_actioncreatetable_triggered();
 
+    void on_LoadingProgressBar_valueChanged(int value);
+
 private:
     Ui::MapEditor *ui;
 
@@ -61,15 +63,11 @@ private:
             statusBarViewModeMessage = "Режим просмотра активен";
     bool editModeOn = false;
     //------------------------------
+    void finishMapAnalyzing();
 
-    QString pathToImage = "kek"; // изображение для создания первоначальной версии карты
+    QString pathToImage = ""; // изображение для создания первоначальной версии карты
     bool savedSession = true;
     compositeMap *mapModel = nullptr;
-
-    void rewritethis();
-
-    void testthreads();
-    void threadstart();
 
     bool dragInProgress = false;
     int xLinePos;

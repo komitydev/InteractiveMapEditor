@@ -10,11 +10,14 @@ compositeMap::~compositeMap()
     return;
 }
 
-bool compositeMap::analyzeImage(QString pathToImage)
+void compositeMap::analyzeImage(QString pathToImage)
 {
     QImage worldMap;
-    qDebug() << "image load status" << worldMap.load(pathToImage);
-
+    if (worldMap.load(pathToImage) == false)
+    {
+        analyzingSuccessful = false;
+        return; // failed to load image
+    }
     worldMap = worldMap.convertToFormat(QImage::Format_Mono, Qt::ThresholdDither | Qt::MonoOnly); // making black and white image
     worldMap = worldMap.convertToFormat(QImage::Format_RGB32); // setting image to color format again to be able to manipulate pixels
 
@@ -65,6 +68,7 @@ bool compositeMap::analyzeImage(QString pathToImage)
     // -----------
 
     int mapSize = w * h; // кол-во пикселей во всем изображении - будем использовать для примерного отображения прогресса выполнения функции
+    int countedPixels = 0;
     int curW = 0, curH = 0; // current X and Y coordinates of pixel on the source image
 
     pixelOnMap currPixel(curW, curH); // пиксель с текущими координатами
@@ -213,8 +217,15 @@ bool compositeMap::analyzeImage(QString pathToImage)
         delete smallRegionImage;
         delete regionMask;
         delete highlightedPixmap;
+
+        countedPixels += regionSize; // накапливаем количество пикселей, чтобы посчитать примерный(не учитывается кол-во пикселей из первой черной маски) прогресс
+        // emit signal with size / mapSize * 100%
+        sgnl_obj.loadingPerformed((int) (countedPixels / mapSize * 100));
     }
-    return true;
+    //emit signal with 100% and hide progress bar in slot, because you do not need it more
+    sgnl_obj.loadingPerformed(100);
+    analyzingSuccessful = true;
+    return;
 }
 
 QString compositeMap::generateNiceColor()
