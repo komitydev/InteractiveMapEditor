@@ -70,7 +70,33 @@ void ext_qgraphicsview::keyPressEvent (QKeyEvent *kevent)
         return;
     }
 
+    if (compositeMap::getItemSelected() == true) // check this later
+    {
+        if (compositeMap::getSelectedRegion() != nullptr)
+        {
+            compositeMap::getSelectedRegion()->resetHighlighting();
+            compositeMap::setSelectedRegion(nullptr);
+        }
+        compositeMap::setItemSelected(false);
+    }
+
     //this->setVisible(false);
+    static int counter = 0;
+    qDebug() << "esc pressed" << counter++;
+    emit this->onEscPress(); // connect this with focus cancel function
     kevent->accept();
     return;
 }
+
+/*void ext_qgraphicsview::mouseMoveEvent(QMouseEvent *mevent)
+{
+    if (compositeMap::getItemSelected() == true)
+    {
+        mevent->accept();
+    }
+    else
+    {
+        mevent->ignore();
+    }
+    return;
+}*/

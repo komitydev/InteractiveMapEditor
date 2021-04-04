@@ -6,6 +6,9 @@
 #include <QGraphicsView>
 #include <QWheelEvent>
 #include <QKeyEvent>
+#include <QDebug>
+
+#include <compositemap.h>
 
 class ext_qgraphicsview : public QGraphicsView
 {
@@ -20,6 +23,9 @@ private:
 
     void wheelEvent(QWheelEvent *wevent);
     void keyPressEvent (QKeyEvent *kevent);
+    //void mouseMoveEvent(QMouseEvent *mevent);
+signals:
+    void onEscPress();
 };
 
 #endif // EXT_QGRAPHICSVIEW_H

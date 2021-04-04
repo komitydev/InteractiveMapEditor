@@ -12,6 +12,8 @@
 #include <QBitmap>
 #include <cheatClass.h>
 #include <QHeaderView>
+#include <QSizePolicy>
+#include <QKeyEvent>
 
 class ext_qgraphicspixmapitem : public QGraphicsPixmapItem
 {
@@ -24,16 +26,21 @@ public:
     cheatClass sgnl;
     QTableWidget *table = nullptr;
 
-private:
-    int id;
+    void resetHighlighting();
 
+    void saveItem(QDataStream *dstream);
+    void loadItem(QDataStream *dstream);
+
+private:
+    // we save all these parameters into file + table
+    int id;
     bool showOnTheMap = true;   // if region was automatically claimed as a territory, but user doesn't want it to be shown as a region - "false"
     QPixmap defaultPixmap;      // pixmap color that is shown by default
     QPixmap highlightedPixmap;  // pixmap color when selected or under cursor (all are supposed to be maybe golden with some kind of a border)
-    QPixmap editPixmap;         // pixmap color in edit mode (all are supposed to be green)
-
+    int grpId = -1;             // if some of the regions needed to be connected to some other regions - this will be used
     QColor defaultColor;
     int size;
+    // we save all these parameters into file
 
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event);

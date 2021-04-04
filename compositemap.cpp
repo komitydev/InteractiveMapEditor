@@ -2,6 +2,11 @@
 
 compositeMap::compositeMap()
 {
+    if (compositeMap::itemSelected == true)
+    {
+        compositeMap::itemSelected = false;
+        compositeMap::selectedRegion = nullptr;
+    }
     return;
 }
 
@@ -9,6 +14,9 @@ compositeMap::~compositeMap()
 {
     return;
 }
+
+bool compositeMap::itemSelected = false;
+ext_qgraphicspixmapitem* compositeMap::selectedRegion = nullptr;
 
 void compositeMap::analyzeImage(QString pathToImage)
 {
@@ -51,7 +59,7 @@ void compositeMap::analyzeImage(QString pathToImage)
         mapItems.at(id).setX(0);
         mapItems.at(id).setY(0);
     }
-    catch (std::out_of_range e2)
+    catch (std::out_of_range &e2)
     {
         mapItems.insert({ id, *bordersItem });
         mapItems.at(id).setX(0);
@@ -122,7 +130,7 @@ void compositeMap::analyzeImage(QString pathToImage)
             {
                 usedColors.at(tempC.name(QColor::HexArgb)) = true; // костыль (надо было использовать другую коллекцию, а не мапу)
             }
-            catch (std::out_of_range e1)
+            catch (std::out_of_range &e1)
             {
                 usedColors.insert({ tempC.name(QColor::HexArgb), true });
                 notGenerated = false;
@@ -204,10 +212,10 @@ void compositeMap::analyzeImage(QString pathToImage)
             mapItems.at(id).setX(cleft);
             mapItems.at(id).setY(ctop);
         }
-        catch (std::out_of_range e2)
+        catch (std::out_of_range &e2)
         {
             mapItems.insert({ id, *newItem });
-            mapItems.at(id).setX(cleft);
+            mapItems.at(id).setX(cleft); // задание позиции (относительно чего?)
             mapItems.at(id).setY(ctop);
         }
 
