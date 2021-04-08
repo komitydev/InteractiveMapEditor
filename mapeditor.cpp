@@ -18,10 +18,11 @@ MapEditor::MapEditor(QWidget *parent)
     ui->mapView->setEnabled(false);
 
     //--- right panel setup ---
+    ui->menudebug->setTitle(""); // hiding qmenu in menubar
     ui->selectQuizWidget->hide(); // виджет, который позволит играть в викторину с выбором указанного региона
     ui->guessQuizWidget->hide(); // виджет, который позволит играть в викторину с выбором правильного ответа из нескольких вариантов
     ui->editPanelWidget->hide(); // виджет позволяет настроить регионы (убрать или вернуть регионы в активные и настроить цвета)
-    //ui->regionCaptionWidget->hide(); // название выбранного региона - будет задаваться из соответствующего поля таблицы
+    ui->regionCaptionWidget->hide(); // название выбранного региона - будет задаваться из соответствующего поля таблицы
     // СДЕЛАТЬ ОБЪЕДИНЕНИЕ РЕГИОНОВ - забыл добавить в дизайнере
 }
 
@@ -145,6 +146,7 @@ void MapEditor::finishMapAnalyzing()
     {
         map->addItem(&showItems->second);
         QObject::connect(&(showItems->second.sgnl), SIGNAL(itemChosen(int)), this, SLOT(infoTable_update(int))); // пока что при удалении композит мапы сигналы не разрываются
+        QObject::connect(&(showItems->second.sgnl), SIGNAL(resetCurrentItemSignal()), this, SLOT(resetCurrentItemSlot())); // изменить слот
         showItems++;
     }
 
@@ -162,21 +164,43 @@ void MapEditor::finishMapAnalyzing()
 void MapEditor::on_enable_edit_mode_triggered() // управление статусбаром
 {
     QAction* edit_mode = qobject_cast<QAction*>(sender());
+    if (mapModel == nullptr)
+    {
+        edit_mode->setChecked(false);
+        return;
+    }
     if (edit_mode->isChecked())
     {
         editModeOn = true;
         ui->editPanelWidget->show();
+        if (currentSelectedItem != -1)
+        {
+            mapModel->mapItems.at(currentSelectedItem).table->setEditTriggers(QAbstractItemView::DoubleClicked);
+            //mapModel->mapItems.at(currentSelectedItem).table->close();
+        }
         statusBarModeLabel->setText(statusBarEditModeMessage);
     }
     else
     {
         editModeOn = false;
         ui->editPanelWidget->hide();
+        if (currentSelectedItem != -1)
+        {
+            mapModel->mapItems.at(currentSelectedItem).table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+            //mapModel->mapItems.at(currentSelectedItem).table->close();
+        }
         statusBarModeLabel->setText(statusBarViewModeMessage);
     }
     return;
 }
 
+void MapEditor::resetCurrentItemSlot()
+{
+    currentSelectedItem = -1;
+    ui->editPanelWidget->hide();
+    //ui->statusbar->showMessage(QString::number(currentSelectedItem));
+    return;
+}
 // посмотреть слот close() в мейн окне - через дебаг проследить, будет ли он вызываться при нажатии на крестик, через диспетчер задач, через меню
 // и через альтф4
 
@@ -209,6 +233,22 @@ void MapEditor::infoTable_update(int number = 0)
 //        }
     }
     firstItemID = number;
+
+    currentSelectedItem = number;
+    loadEditPanel(); // при выборе нового региона загружаем информацию в панель
+    if (editModeOn == true)
+    {
+        ui->editPanelWidget->show();
+        mapModel->mapItems.at(currentSelectedItem).table->setEditTriggers(QAbstractItemView::DoubleClicked);
+    }
+    else
+    {
+        ui->editPanelWidget->hide();
+        mapModel->mapItems.at(currentSelectedItem).table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    }
+    //ui->statusbar->showMessage(QString::number(currentSelectedItem));
+
+
     //qDebug() << mapModel->mapItems.at(number).table->editTriggers();
     //mapModel->mapItems.at(number).table->setEditTriggers(QAbstractItemView::NoEditTriggers); // EXCELLENT!
 
@@ -307,6 +347,20 @@ void MapEditor::infoTable_update(int number = 0)
 //    ui->infoTable->update();
 }
 
+void MapEditor::loadEditPanel()
+{
+    static QPixmap localColor(30, 30);
+    ext_qgraphicspixmapitem *itemRef = &mapModel->mapItems.at(currentSelectedItem);
+    localColor.fill(itemRef->getDefaultColor());
+    ui->colorPreviewPixmap->setPixmap(localColor);
+    //--------------------------------------------
+    static QString colorLabelTextBase = " - текущий цвет выбранного региона в формате RGB: ";
+    ui->colorPreviewLabel->setText(colorLabelTextBase + itemRef->getDefaultColor().name(QColor::HexRgb));
+    //--------------------------------------------
+    ui->groupList->setCurrentIndex(ui->groupList->findText(itemRef->getGroupTag()));
+    return;
+}
+
 void MapEditor::on_actiondelete_table_from_map_class_triggered()
 {
     int i = 0;
@@ -320,6 +374,7 @@ void MapEditor::on_actiondelete_table_from_map_class_triggered()
     }
     qDebug() << "chilren total" << i << "children begin >" << ui->infowidget->findChildren<QTableWidget *>() << "< children end";
     //mapItems.at(number).table
+    return;
 }
 
 void MapEditor::on_save_file_triggered()
@@ -402,17 +457,32 @@ void MapEditor::on_open_file_triggered()
     for (int i = 0; i < itemMapSize; i++)
     {
         ext_qgraphicspixmapitem *newItem = new ext_qgraphicspixmapitem();
-        newItem->loadItem(&out);
+        int r_id; // read id
+        out >> r_id;
 
         try
         {
-            mapModel->mapItems.at(newItem->getID()).x();
+            mapModel->mapItems.at(r_id).x();
         }
         catch (std::out_of_range &e2)
         {
-            mapModel->mapItems.insert({ newItem->getID(), *newItem });
-            mapModel->mapItems.at(newItem->getID()).setX(newItem->x());
-            mapModel->mapItems.at(newItem->getID()).setY(newItem->y());
+            mapModel->mapItems.insert({ r_id, *newItem });
+            ext_qgraphicspixmapitem *lref = &(mapModel->mapItems.at(r_id));
+            lref->loadItem(&out, r_id);
+            if (lref->getShowOnTheMap() == false)
+            {
+                lref->setAcceptHoverEvents(false);
+                lref->setAcceptedMouseButtons(Qt::NoButton);
+                lref->unsetCursor();
+            }
+//            ext_qgraphicspixmapitem lref = &(mapModel->mapItems.at(r_id));
+//            lref.loadItem(&out, r_id);
+//            if (lref.getShowOnTheMap() == false)
+//            {
+//                lref.setAcceptHoverEvents(false);
+//                lref.setAcceptedMouseButtons(Qt::NoButton);
+//                lref.unsetCursor();
+//            }
         }
 
         delete newItem;
@@ -506,10 +576,117 @@ void MapEditor::on_actionchecksaving_triggered()
     return;
 }
 
+void MapEditor::on_deleteLastRow_clicked()
+{
+    if (currentSelectedItem == -1)
+        return;
+    mapModel->mapItems.at(currentSelectedItem).deleteLastRowFromTable();
+    return;
+}
 
+void MapEditor::on_addLastRow_clicked()
+{
+    if (currentSelectedItem == -1)
+        return;
+    mapModel->mapItems.at(currentSelectedItem).addRowToTable("", "");
+    return;
+}
 
-// сохранение созданной карты
-// загрузка сохраненной карты
-// загрузка из excel в подготовленную предварительно карту
+void MapEditor::on_makeRegionInactive_clicked()
+{
+    if (currentSelectedItem == -1)
+        return;
+    mapModel->inactiveRegions.push_back(currentSelectedItem);
+    QString regionName = mapModel->mapItems.at(currentSelectedItem).table->item(0,1)->text();
+    if (regionName == "")
+        regionName = "-";
+    ui->inactiveRegionsList->addItem("ID: " + QString::number(currentSelectedItem) + " ; Название: "
+            + regionName + " ; Размер: " + QString::number(mapModel->mapItems.at(currentSelectedItem).getSize()));
+    mapModel->mapItems.at(currentSelectedItem).setGroupTag("no_group"); // чтобы разорвать связь с регионами
+    mapModel->mapItems.at(currentSelectedItem).setIsMainInGroup(true);
+    // нужно учесть, что если груп айди не равен -1, то надо разорвать связь с группой, назначить другой "главный" регион, скопировать таблицу и т.д.
 
+    mapModel->mapItems.at(currentSelectedItem).hideItem();
+    mapModel->mapItems.at(currentSelectedItem).resetHighlighting();
+    return;
+}
 
+void MapEditor::on_colorDialogButton_clicked()
+{
+    if (currentSelectedItem == -1)
+        return;
+    QColor colorChoice = QColorDialog::getColor(Qt::white, this, "Выберите новый цвет для текущего региона");
+    if (!colorChoice.isValid())
+        return;
+    mapModel->mapItems.at(currentSelectedItem).setNewDefaultColor(colorChoice);
+
+    QPixmap localColor(30, 30);
+    localColor.fill(colorChoice);
+    ui->colorPreviewPixmap->setPixmap(localColor);
+    //--------------------------------------------
+    static QString colorLabelTextBase = " - текущий цвет выбранного региона в формате RGB: ";
+    ui->colorPreviewLabel->setText(colorLabelTextBase + colorChoice.name(QColor::HexRgb));
+    //--------------------------------------------
+
+    return;
+}
+
+void MapEditor::on_createNewGroup_clicked()
+{
+    QString groupName = ui->groupCreation->text();
+    if (groupName.isEmpty())
+        return;
+    try
+    {
+        mapModel->groupList.at(groupName) = true;
+        ui->groupCreation->setText("");
+        return;
+        //qDebug() << "ex occured";
+        return; // если исключение возникает, то оно возникает при попытке доступа к мап айтему, иначе выполнение - доходит до этого момента
+    }
+    catch (std::out_of_range &ex)
+    {
+        //qDebug() << "ex accepted";
+        mapModel->groupList.insert({ groupName, true });
+    }
+    ui->groupList->addItem(groupName);
+    //mapModel->groupList.push_back(ui->groupCreation->text());
+    ui->groupCreation->setText("");
+    return;
+}
+
+void MapEditor::on_putCurrentRegionIntoGroup_clicked()
+{
+    if (ui->groupList->currentIndex() == -1)
+        return;
+    if (currentSelectedItem == -1)
+        return;
+    mapModel->mapItems.at(currentSelectedItem).setGroupTag(ui->groupList->currentText());
+    //qDebug() << ui->groupList->currentText();
+    return;
+    // сделать так, чтобы всей группе сразу задавался цвет мэйн региона из группы
+    // сделать, чтобы сразу выбиралась вся область // область будет выделена после повторного выбора региона (надо переделать, но много переписывать)
+}
+
+void MapEditor::on_makeRegionActive_clicked() // awful
+{
+    if (ui->inactiveRegionsList->currentIndex() == -1)
+        return;
+    std::list<int>::iterator inactiveList = mapModel->inactiveRegions.begin();
+    QString buff = "-1";
+
+    while (inactiveList != mapModel->inactiveRegions.end())
+    {
+        buff = ui->inactiveRegionsList->currentText();
+        buff = buff.mid(buff.indexOf(":") + 2, buff.indexOf(";") - buff.indexOf(":") - 3); // переделать(как и все остальное)
+
+        if (*inactiveList == buff.toInt())
+            break;
+        inactiveList++;
+    }
+    ui->inactiveRegionsList->removeItem(ui->inactiveRegionsList->currentIndex());
+    ui->inactiveRegionsList->setCurrentIndex(-1);
+    mapModel->mapItems.at(buff.toInt()).showItem();
+    mapModel->inactiveRegions.erase(inactiveList);
+    return;
+}

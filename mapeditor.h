@@ -17,6 +17,7 @@
 #include <math.h>
 #include <QImage>
 //#include <QFrame>
+#include <QColorDialog>
 //-----------------------------------
 
 QT_BEGIN_NAMESPACE
@@ -42,9 +43,27 @@ private slots:
 
     void on_open_file_triggered();
 
+    void resetCurrentItemSlot();
+
+    void on_deleteLastRow_clicked();
+
+    void on_addLastRow_clicked();
+
+    void on_makeRegionInactive_clicked();
+
+    void on_colorDialogButton_clicked();
+
+    void on_createNewGroup_clicked();
+
+    void on_putCurrentRegionIntoGroup_clicked();
+
+    void on_makeRegionActive_clicked();
+
 private:
     Ui::MapEditor *ui;
 
+    int currentSelectedItem = -1; // id in item map
+    void loadEditPanel(); // загружает в edit panel информацию о текущем выбранном регионе
     //--- управление статусбаром ---
     QLabel *statusBarModeLabel;
     QString statusBarEditModeMessage = "Режим редактирования активен",

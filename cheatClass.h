@@ -10,9 +10,11 @@ public:
     explicit cheatClass(QObject *parent = nullptr);
     void performMessaging(int a);
     void loadingPerformed(int a);
+    void resetCurrentItem();
 signals:
     void itemChosen(int b);
     void loadingStep(int b);
+    void resetCurrentItemSignal();
 };
 
 #endif // CHEATCLASS_H

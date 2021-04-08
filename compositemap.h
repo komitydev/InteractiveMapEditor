@@ -28,6 +28,9 @@ public:
     std::map<int, ext_qgraphicspixmapitem> mapItems;    // first key(int) is for ID of the item
     std::map<QString, bool> usedColors;                 // color and id of the region that uses it
 
+    std::list<int> inactiveRegions; // key is id same as in the mapItems map
+    std::map<QString, bool> groupList;
+
     void analyzeImage(QString pathToImage); // file name with image to analyze
 
     static void setItemSelected(bool choice) { itemSelected = choice; }

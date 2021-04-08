@@ -64,6 +64,7 @@ void compositeMap::analyzeImage(QString pathToImage)
         mapItems.insert({ id, *bordersItem });
         mapItems.at(id).setX(0);
         mapItems.at(id).setY(0);
+        mapItems.at(id).hideItem();
         mapItems.at(id).setAcceptHoverEvents(false);            // for the borders we need to disable hover events,
         mapItems.at(id).setAcceptedMouseButtons(Qt::NoButton);  // all mouse buttons
         mapItems.at(id).unsetCursor();                          // and return cursor to default state

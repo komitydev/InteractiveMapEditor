@@ -16,3 +16,9 @@ void cheatClass::loadingPerformed(int a)
     emit this->loadingStep(a);
     return;
 }
+
+void cheatClass::resetCurrentItem()
+{
+    emit this->resetCurrentItemSignal();
+    return;
+}

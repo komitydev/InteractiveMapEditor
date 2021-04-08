@@ -23,8 +23,10 @@ ext_qgraphicspixmapitem::ext_qgraphicspixmapitem(QGraphicsItem *parent) : QGraph
     QFont forCaptions("MS Shell Dlg", 10, QFont::Bold);
     firstCol->setText("Название");
     firstCol->setFont(forCaptions);
-    table->setItem(1,1,firstCol);
-    //table->item(1,1)->te
+    table->setItem(0, 0, firstCol);
+    //---
+    QTableWidgetItem *secondCol = new QTableWidgetItem("");
+    table->setItem(0, 1, secondCol);
     //---------------------------
     table->setColumnWidth(0, 165);
     table->setColumnWidth(1, 215);
@@ -72,7 +74,10 @@ ext_qgraphicspixmapitem::ext_qgraphicspixmapitem(const ext_qgraphicspixmapitem &
     QFont forCaptions("MS Shell Dlg", 10, QFont::Bold);
     firstCol->setText("Название");
     firstCol->setFont(forCaptions);
-    table->setItem(0,0,firstCol);
+    table->setItem(0, 0, firstCol);
+    //---
+    QTableWidgetItem *secondCol = new QTableWidgetItem("");
+    table->setItem(0, 1, secondCol);
     //---------------------------
     table->setColumnWidth(0, 165);
     table->setColumnWidth(1, 215);
@@ -176,6 +181,8 @@ void ext_qgraphicspixmapitem::resetHighlighting()
     defaultPixmap.setMask(cmask);
 
     this->setPixmap(defaultPixmap); // yes
+
+    this->sgnl.resetCurrentItem(); // при отмене выделения посылаем сигнал на изменение текущего айтема
 }
 
 void ext_qgraphicspixmapitem::saveItem(QDataStream *dstream)
@@ -206,16 +213,19 @@ void ext_qgraphicspixmapitem::saveItem(QDataStream *dstream)
     (*dstream) << showOnTheMap;
     (*dstream) << defaultPixmap;
     (*dstream) << highlightedPixmap;
-    (*dstream) << grpId;
+    (*dstream) << grpTag;
     (*dstream) << defaultColor;
     (*dstream) << size;
+    (*dstream) << groupMates;
+    (*dstream) << isMainInGroup;
 
     return;
 }
 
-void ext_qgraphicspixmapitem::loadItem(QDataStream *dstream)
+void ext_qgraphicspixmapitem::loadItem(QDataStream *dstream, int r_id)
 {
-    (*dstream) >> id;
+    //(*dstream) >> id;
+    this->id = r_id;
 
     qreal qrealBuf;
     (*dstream) >> qrealBuf; // x
@@ -232,6 +242,7 @@ void ext_qgraphicspixmapitem::loadItem(QDataStream *dstream)
 
     QString emptyCellCheck = "imekd_no_item_in_table";
     QString bufStr;
+    QFont forCaptionsOnOpening("MS Shell Dlg", 10, QFont::Bold);
 
     for (int i = 0; i < table->rowCount(); i++)
     {
@@ -241,6 +252,8 @@ void ext_qgraphicspixmapitem::loadItem(QDataStream *dstream)
 //            if (bufStr == emptyCellCheck)
 //                continue;
             QTableWidgetItem *bufItem = new QTableWidgetItem(bufStr);
+            if (j == 0) // первый столбец всегда другим шрифтом
+                bufItem->setFont(forCaptionsOnOpening);
             table->setItem(i, j, bufItem);
         }
     }
@@ -248,9 +261,68 @@ void ext_qgraphicspixmapitem::loadItem(QDataStream *dstream)
     (*dstream) >> showOnTheMap;
     (*dstream) >> defaultPixmap;
     (*dstream) >> highlightedPixmap;
-    (*dstream) >> grpId;
+    (*dstream) >> grpTag;
     (*dstream) >> defaultColor;
     (*dstream) >> size;
+    (*dstream) >> groupMates;
+    (*dstream) >> isMainInGroup;
 
+    this->setPixmap(defaultPixmap); // какой же мусор, а не код
+
+    return;
+}
+
+void ext_qgraphicspixmapitem::addRowToTable(QString left = "", QString right = "")
+{
+    int rowCount = table->rowCount();
+    table->setRowCount(rowCount + 1);
+
+    QTableWidgetItem *leftCol = new QTableWidgetItem();
+    leftCol->setText(left);
+    QTableWidgetItem *rightCol = new QTableWidgetItem();
+    rightCol->setText(right);
+
+    QFont forCaptions("MS Shell Dlg", 10, QFont::Bold);
+    leftCol->setFont(forCaptions);
+
+    table->setItem(rowCount, 0, leftCol);
+    table->setItem(rowCount, 1, rightCol);
+
+    return;
+}
+
+void ext_qgraphicspixmapitem::deleteLastRowFromTable()
+{
+    if(table->rowCount() <= 1)
+        return;
+    table->setRowCount(table->rowCount() - 1);
+    return;
+}
+
+void ext_qgraphicspixmapitem::hideItem()
+{
+    this->setAcceptHoverEvents(false);
+    this->setAcceptedMouseButtons(Qt::NoButton);
+    this->unsetCursor();
+
+    compositeMap::setSelectedRegion(nullptr); // запоминаем указатель на выбранный регион
+    compositeMap::setItemSelected(false); // меняем флаг выбора региона
+    showOnTheMap = false;
+    return;
+}
+
+void ext_qgraphicspixmapitem::showItem()
+{
+    this->setAcceptHoverEvents(true);
+    this->setAcceptedMouseButtons(Qt::MouseButton::LeftButton);
+    this->setCursor(Qt::PointingHandCursor);
+    showOnTheMap = true;
+    return;
+}
+
+void ext_qgraphicspixmapitem::setNewDefaultColor(QColor newColor)
+{
+    // сперва поработать с группами
+    defaultColor = newColor;
     return;
 }

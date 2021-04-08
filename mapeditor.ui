@@ -129,6 +129,9 @@
          <property name="viewportUpdateMode">
           <enum>QGraphicsView::MinimalViewportUpdate</enum>
          </property>
+         <property name="optimizationFlags">
+          <set>QGraphicsView::DontAdjustForAntialiasing</set>
+         </property>
         </widget>
        </item>
        <item>
@@ -259,6 +262,9 @@
           </property>
           <item>
            <widget class="QWidget" name="regionCaptionWidget" native="true">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -387,7 +393,7 @@
            </widget>
           </item>
           <item>
-           <widget class="Line" name="visualSeparator0">
+           <widget class="Line" name="visualSeparator1">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
@@ -418,18 +424,19 @@
                </property>
               </widget>
              </item>
-             <item row="0" column="1">
-              <widget class="QPushButton" name="createNewGroup">
-               <property name="text">
-                <string>Создать новую группу</string>
-               </property>
-              </widget>
-             </item>
              <item row="1" column="0">
               <widget class="QComboBox" name="groupList">
+               <property name="currentText">
+                <string>Список групп...</string>
+               </property>
                <property name="placeholderText">
                 <string>Список групп...</string>
                </property>
+               <item>
+                <property name="text">
+                 <string>no_group</string>
+                </property>
+               </item>
               </widget>
              </item>
              <item row="1" column="1">
@@ -439,11 +446,32 @@
                </property>
               </widget>
              </item>
+             <item row="0" column="1">
+              <widget class="QPushButton" name="createNewGroup">
+               <property name="text">
+                <string>Создать новую группу</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </widget>
           </item>
           <item>
            <widget class="Line" name="visualseparator3">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="makeRegionInactive">
+            <property name="text">
+             <string>Сделать текущий регион неактивным</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="Line" name="line_3">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
@@ -525,17 +553,24 @@
            </widget>
           </item>
           <item>
-           <widget class="Line" name="visualSeparator1">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="makeRegionInactive">
-            <property name="text">
-             <string>Сделать текущий регион неактивным</string>
-            </property>
+           <widget class="QWidget" name="widget" native="true">
+            <layout class="QHBoxLayout" name="horizontalLayout_7">
+             <property name="spacing">
+              <number>3</number>
+             </property>
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+            </layout>
            </widget>
           </item>
           <item>
@@ -564,9 +599,15 @@
               <number>0</number>
              </property>
              <item>
-              <widget class="QLabel" name="inactiveRegionsLabel">
+              <widget class="QLabel" name="label_2">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="text">
-                <string>Неактивные регионы:</string>
+                <string>Список неактивных регионов:   </string>
                </property>
               </widget>
              </item>
@@ -587,13 +628,6 @@
               <widget class="QPushButton" name="makeRegionActive">
                <property name="text">
                 <string>Сделать выбранный регион активным</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="showInactiveRegion">
-               <property name="text">
-                <string>Показать выбранный регион</string>
                </property>
               </widget>
              </item>
@@ -934,8 +968,11 @@
     <addaction name="loadSourceImage"/>
    </widget>
    <widget class="QMenu" name="menudebug">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="title">
-     <string>debug</string>
+     <string>Служебное</string>
     </property>
     <addaction name="actiondelete_table_from_map_class"/>
     <addaction name="actionresize_context"/>
@@ -1029,21 +1066,33 @@
    </property>
   </action>
   <action name="actiondelete_table_from_map_class">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>delete table from map class</string>
    </property>
   </action>
   <action name="actionresize_context">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>resize context</string>
    </property>
   </action>
   <action name="actionchecksaving">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>checksaving</string>
    </property>
   </action>
   <action name="actioncreatetable">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>createtable</string>
    </property>
