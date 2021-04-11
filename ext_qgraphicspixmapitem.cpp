@@ -97,6 +97,21 @@ ext_qgraphicspixmapitem::ext_qgraphicspixmapitem(const ext_qgraphicspixmapitem &
     return;
 }
 
+void ext_qgraphicspixmapitem::insertFlagLabel(QString name, QPixmap imgToLabel)
+{
+    table->insertRow(1);
+    QTableWidgetItem *firstCol = new QTableWidgetItem();
+    QFont forCaptions("MS Shell Dlg", 10, QFont::Bold);
+    firstCol->setText(name);
+    firstCol->setFont(forCaptions);
+    table->setItem(1, 0, firstCol);
+    //--------------------------------------------------
+    QLabel *flagLabel = new QLabel();
+    flagLabel->setPixmap(imgToLabel);
+    table->setCellWidget(1, 1, flagLabel);
+    return;
+}
+
 void ext_qgraphicspixmapitem::setProps(int id, QPixmap defaultPixmap, QPixmap highlightedPixmap, QColor defaultColor, int size)
 {
     this->id = id;
@@ -205,6 +220,17 @@ void ext_qgraphicspixmapitem::saveItem(QDataStream *dstream)
                 (*dstream) << (QString) "";
                 continue;
             }
+            if ((table->item(i, j)->text() == "Флаг") && (j == 0)) // если "флаг" в первом столбце (то есть название категории и справа флаг, а не фейк)
+            {
+                // но по-хорошему, это очень ненадежный костыль
+                QLabel *lbl = (QLabel *) table->cellWidget(i, j+1);
+
+                QPixmap pix = lbl->pixmap(Qt::ReturnByValue);
+                (*dstream) << table->item(i, j)->text();
+                (*dstream) << pix;
+                break;
+            }
+
             (*dstream) << table->item(i, j)->text();
             //qDebug() << table->item(i, j)->text();
         }
@@ -249,6 +275,14 @@ void ext_qgraphicspixmapitem::loadItem(QDataStream *dstream, int r_id)
         for (int j = 0; j < table->columnCount(); j++)
         {
             (*dstream) >> bufStr;
+            if (bufStr == "Флаг" && j == 0) // костыль, но сроки поджимают
+            {
+                QPixmap pix;
+                (*dstream) >> pix;
+                this->insertFlagLabel(bufStr, pix);
+                this->table->setRowCount(this->table->rowCount() - 1);
+                break;
+            }
 //            if (bufStr == emptyCellCheck)
 //                continue;
             QTableWidgetItem *bufItem = new QTableWidgetItem(bufStr);

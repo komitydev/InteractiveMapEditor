@@ -59,6 +59,10 @@ private slots:
 
     void on_makeRegionActive_clicked();
 
+    void on_downloadFlagsToTable_triggered();
+
+    void on_downloadInfoToTable_triggered();
+
 private:
     Ui::MapEditor *ui;
 

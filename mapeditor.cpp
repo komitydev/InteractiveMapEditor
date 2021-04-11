@@ -18,12 +18,13 @@ MapEditor::MapEditor(QWidget *parent)
     ui->mapView->setEnabled(false);
 
     //--- right panel setup ---
+    ui->visualseparator3->setVisible(false);
+    ui->regionGroupsControl->setVisible(false); // спрятать панельку с манипуляцией группами, так как пока что она не нужна
     ui->menudebug->setTitle(""); // hiding qmenu in menubar
     ui->selectQuizWidget->hide(); // виджет, который позволит играть в викторину с выбором указанного региона
     ui->guessQuizWidget->hide(); // виджет, который позволит играть в викторину с выбором правильного ответа из нескольких вариантов
     ui->editPanelWidget->hide(); // виджет позволяет настроить регионы (убрать или вернуть регионы в активные и настроить цвета)
     ui->regionCaptionWidget->hide(); // название выбранного региона - будет задаваться из соответствующего поля таблицы
-    // СДЕЛАТЬ ОБЪЕДИНЕНИЕ РЕГИОНОВ - забыл добавить в дизайнере
 }
 
 MapEditor::~MapEditor()
@@ -435,12 +436,12 @@ void MapEditor::on_open_file_triggered()
 
     QFile file(pathToImage);
     file.open(QIODevice::ReadOnly);
-    QDataStream out(&file);
+    QDataStream in(&file);
 
     QString fileIdentificator = "|InteractiveMapEditorv04042021_file|";
     QString buf;
 
-    out >> buf;
+    in >> buf;
 
     if (buf != fileIdentificator)
     {
@@ -449,16 +450,16 @@ void MapEditor::on_open_file_triggered()
         delete mapModel;
         return;
     }
-    out >> mapModel->width;
-    out >> mapModel->height;
+    in >> mapModel->width;
+    in >> mapModel->height;
     int itemMapSize;
-    out >> itemMapSize;
+    in >> itemMapSize;
 
     for (int i = 0; i < itemMapSize; i++)
     {
         ext_qgraphicspixmapitem *newItem = new ext_qgraphicspixmapitem();
         int r_id; // read id
-        out >> r_id;
+        in >> r_id;
 
         try
         {
@@ -468,7 +469,7 @@ void MapEditor::on_open_file_triggered()
         {
             mapModel->mapItems.insert({ r_id, *newItem });
             ext_qgraphicspixmapitem *lref = &(mapModel->mapItems.at(r_id));
-            lref->loadItem(&out, r_id);
+            lref->loadItem(&in, r_id);
             if (lref->getShowOnTheMap() == false)
             {
                 lref->setAcceptHoverEvents(false);
@@ -489,13 +490,13 @@ void MapEditor::on_open_file_triggered()
     }
 
     int colorMapSize;
-    out >> colorMapSize;
+    in >> colorMapSize;
 
     QString bufColor;
 
     for (int i = 0; i < colorMapSize; i++)
     {
-        out >> bufColor;
+        in >> bufColor;
         try // вообще список использованных цветов надо было бы сделать не картой
         {
             mapModel->usedColors.at(bufColor) = true; // костылик
@@ -689,4 +690,144 @@ void MapEditor::on_makeRegionActive_clicked() // awful
     mapModel->mapItems.at(buff.toInt()).showItem();
     mapModel->inactiveRegions.erase(inactiveList);
     return;
+}
+
+
+
+void MapEditor::on_downloadFlagsToTable_triggered()
+{
+    if (mapModel == nullptr)
+    {
+        ui->statusbar->showMessage("В данный момент в памяти нет модели карты - сперва обработайте изображение и задайте регионам имена, чтобы загрузить файл таблицы корректно.");
+        return;
+    }
+
+    QStringList flags = QFileDialog::getOpenFileNames(nullptr, "Выберите файлы флагов для добавления в таблицу",
+                            QCoreApplication::applicationDirPath(), "Images (*.png *.jpg)");
+
+    if (flags.empty())
+        return;
+
+    auto flagsIter = flags.begin();
+
+    int scalingWidth = 215; // ширина 2 столбца таблицы
+    //int scalingHeight = 100; // захотелось
+    std::map<QString, QImage> *flagsMap = new std::map<QString, QImage>();
+    //double scaling = 1;
+
+    while (flagsIter != flags.end())
+    {
+//        if (scalingHeight < 5)
+//        {
+//            delete flagsMap;
+//            return;
+//        }
+        static QString str_buff = "";
+        QImage imageBuff;
+        str_buff = (*flagsIter).mid((*flagsIter).lastIndexOf("/") + 1, (*flagsIter).lastIndexOf(".") - (*flagsIter).lastIndexOf("/") - 1);
+        if (!imageBuff.load(*flagsIter))
+            continue; // ошибка
+        //scaling =  scalingHeight / imageBuff.height();
+        imageBuff = imageBuff.scaledToWidth(scalingWidth);
+        flagsMap->insert({ str_buff, imageBuff });
+        flagsIter++;
+    }
+
+    std::map<int, ext_qgraphicspixmapitem>::iterator mapItemsEditing = mapModel->mapItems.begin();
+
+    while (mapItemsEditing != mapModel->mapItems.end()) // проходимся по всем мап айтемам, которые есть у нас в модели
+    {
+        static QString regionTitle = "";
+        regionTitle = mapItemsEditing->second.table->item(0, 1)->text(); // если в таблице у конкретного региона не задано имя - пропустим его, иначе - заполним
+        if (regionTitle == "")
+        {
+            mapItemsEditing++;
+            continue;
+        }
+        try
+        {
+            auto img = flagsMap->at(regionTitle);
+            mapModel->mapItems.at(mapItemsEditing->second.getID()).insertFlagLabel("Флаг", QPixmap::fromImage(flagsMap->at(regionTitle)));
+        }
+        catch (std::out_of_range &exception)
+        {
+            ;
+        }
+        mapItemsEditing++;
+    }
+    delete flagsMap;
+    return;
+}
+
+void MapEditor::on_downloadInfoToTable_triggered()
+{
+    if (mapModel == nullptr)
+    {
+        ui->statusbar->showMessage("В данный момент в памяти нет модели карты - сперва обработайте изображение и задайте регионам имена, чтобы загрузить файл таблицы корректно.");
+        return;
+    }
+
+    QString pathToImage = QFileDialog::getOpenFileName(nullptr, "Choose the .csv file you want to open",
+                                                       QCoreApplication::applicationDirPath(), "Файл таблицы (*.csv)");
+
+    if (pathToImage == "")
+        return;
+
+    QFile file(pathToImage);
+    file.open(QIODevice::ReadOnly);
+    QTextStream in(&file);
+
+    QString readBuffer;
+    readBuffer = in.readLine();
+    if (in.atEnd()) // файл пуст
+    {
+        ui->statusbar->showMessage("Файл не содержит данных");
+        return;
+    }
+    if (readBuffer.mid(0, readBuffer.indexOf(";")) != "Название") // файл имеет неправильную структуру
+    {
+        ui->statusbar->showMessage("Имеет неправильную структуру. Первый столбец в таблице должен быть: \"Название\"");
+        return;
+    }
+
+    QStringList captionList = readBuffer.split(";");
+    std::map<QString, QString> tableImport;
+
+    while (!in.atEnd())
+    {
+        readBuffer = in.readLine();
+        tableImport.insert({ readBuffer.mid(0, readBuffer.indexOf(";")), readBuffer });
+    }
+
+    std::map<int, ext_qgraphicspixmapitem>::iterator mapItemsEditing = mapModel->mapItems.begin();
+
+    while (mapItemsEditing != mapModel->mapItems.end()) // проходимся по всем мап айтемам, которые есть у нас в модели
+    {
+        static QString regionTitle = "";
+        regionTitle = mapItemsEditing->second.table->item(0, 1)->text(); // если в таблице у конкретного региона не задано имя - пропустим его, иначе - заполним
+        if (regionTitle == "")
+        {
+            mapItemsEditing++;
+            continue;
+        }
+        auto cur_iter = tableImport.find(regionTitle); // находим по ключу в мапе, которую мы получили из таблицы в csv файле, нужное имя
+        if (cur_iter != tableImport.end()) // если нашли, то заполним таблицу
+        {
+            ext_qgraphicspixmapitem *item_buf = &mapModel->mapItems.at(mapItemsEditing->first);
+            QStringList stringList = cur_iter->second.split(";");
+            auto captionIter = captionList.begin() + 1; // первый айтем - название
+            auto currentRowIter = stringList.begin() + 1; // первый айтем - название
+
+            while (true)
+            {
+                if (captionIter == captionList.end() || currentRowIter == stringList.end())
+                    break;
+                item_buf->addRowToTable(*captionIter, *currentRowIter);
+
+                captionIter++;
+                currentRowIter++;
+            }
+        }
+        mapItemsEditing++;
+    }
 }

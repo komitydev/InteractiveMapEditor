@@ -14,6 +14,7 @@
 #include <QHeaderView>
 #include <QSizePolicy>
 #include <QKeyEvent>
+#include <QLabel>
 
 class ext_qgraphicspixmapitem : public QGraphicsPixmapItem
 {
@@ -37,6 +38,7 @@ public:
 
     QColor getDefaultColor() { return defaultColor; }
 
+    void insertFlagLabel(QString name, QPixmap imgToLabel);
     void addRowToTable(QString left, QString right);
     void deleteLastRowFromTable();
     void setNewDefaultColor(QColor newColor);

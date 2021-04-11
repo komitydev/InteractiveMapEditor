@@ -966,6 +966,8 @@
     <addaction name="enable_edit_mode"/>
     <addaction name="separator"/>
     <addaction name="loadSourceImage"/>
+    <addaction name="downloadInfoToTable"/>
+    <addaction name="downloadFlagsToTable"/>
    </widget>
    <widget class="QMenu" name="menudebug">
     <property name="enabled">
@@ -1095,6 +1097,16 @@
    </property>
    <property name="text">
     <string>createtable</string>
+   </property>
+  </action>
+  <action name="downloadInfoToTable">
+   <property name="text">
+    <string>Загрузить информацию в таблицы регионов</string>
+   </property>
+  </action>
+  <action name="downloadFlagsToTable">
+   <property name="text">
+    <string>Загрузить флаги в таблицы регионов</string>
    </property>
   </action>
  </widget>
