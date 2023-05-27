@@ -4,7 +4,7 @@ A tool that can help you create and edit simple interactive maps and schemes
 Created using Qt 5.15.0 and MinGW 8.1.0
 
 
-Tool allows you to transform any picture with certain contrast between borders and empty space automatically into the map with interactive regions. After that you will be able to add infomation that are connected to that region, change region color, make region non-interactive, save/load maps created using this tool. You can see examples in videos below
+Tool allows you to transform any picture with certain contrast between borders and empty space automatically into the map with interactive regions. After that you will be able to add infomation that is connected to that region, change region color, make region non-interactive, save/load maps created using this tool. You can see examples in videos below
 
 
 Colors that are too bright are transformed into background, when analyzing image, colors that are less bright are treated as borders of regions:
